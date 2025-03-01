@@ -1,5 +1,5 @@
 ## Description
-This project is a simple budget management tool that processes transaction data from Kaspi Gold bank statements. It calculates total expenses and income for each store, based on purchases and deposits.
+This PET project is a simple budget management tool that processes transaction data from Kaspi Gold bank statements. It calculates total expenses and income for each store, based on purchases and deposits.
 
 ## Changelog
 [1.0.0] - 2025-03-01
@@ -16,7 +16,7 @@ This project is a simple budget management tool that processes transaction data 
 ---------------------------------------------------------------------------------------------------------------
 
 ## Описание
-Проект представляет собой простое приложение для управления бюджетом, которое обрабатывает данные о транзакциях из выписок Kaspi Gold. Оно вычисляет общие расходы и доходы для каждого магазина на основе покупок и пополнений.
+Проект ПЭТ-представляет собой простое приложение для управления бюджетом, которое обрабатывает данные о транзакциях из выписок Kaspi Gold. Оно вычисляет общие расходы и доходы для каждого магазина на основе покупок и пополнений.
 
 ## Журнал изменений
 [1.0.0] - 1 марта 2025
