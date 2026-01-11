@@ -2,18 +2,17 @@
 This project is a web application for budget management that processes transaction data from Kaspi Gold bank statements. It calculates total expenses and income for each store, based on purchases and deposits. The application features a modern web interface with drag-and-drop file upload, PDF parsing, and Excel export functionality.
 
 ## Features
-- 📄 **Drag-and-drop PDF upload** - Easy file upload interface
-- 🔄 **PDF to JSON conversion** - Automatic extraction of transaction data
-- 💰 **Transaction calculations** - Total expenses and income per store
-- 📊 **Beautiful UI** - Modern interface built with Tailwind CSS
-- 🔍 **JSON preview** - View raw transaction data
-- 📥 **Excel export** - Export results to Excel format
-- 🔒 **Security** - Rate limiting, file validation, and secure headers
+- **Drag-and-drop PDF upload** - Easy file upload interface
+- **PDF to JSON conversion** - Automatic extraction of transaction data
+- **Transaction calculations** - Total expenses and income per store
+- **Beautiful UI** - Modern interface built with Tailwind CSS
+- **JSON preview** - View raw transaction data
+- **Excel export** - Export results to Excel format
+- **Security** - Rate limiting, file validation, and secure headers
 
 ## Changelog
 [1.2.0] - 2026-01-12
 - Added Excel export functionality
-- Optimized for Vercel Hobby plan (10s timeout)
 - Enhanced security features (rate limiting, file validation)
 - Improved error handling and user feedback
 - Added file size limits (5MB for Hobby plan)
@@ -50,18 +49,17 @@ Then open http://localhost:3000 in your browser:
 Проект представляет собой веб-приложение для управления бюджетом, которое обрабатывает данные о транзакциях из выписок Kaspi Gold. Оно вычисляет общие расходы и доходы для каждого магазина на основе покупок и пополнений. Приложение имеет современный веб-интерфейс с drag-and-drop загрузкой файлов, парсингом PDF и экспортом в Excel.
 
 ## Возможности
-- 📄 **Загрузка PDF файлов** - через drag-and-drop или выбор файла
-- 🔄 **Автоматическая конвертация** - PDF в JSON формат
-- 💰 **Расчет транзакций** - общие суммы по каждому магазину
-- 📊 **Красивый интерфейс** - современный UI на Tailwind CSS
-- 🔍 **Просмотр JSON** - просмотр исходных данных
-- 📥 **Экспорт в Excel** - экспорт результатов в Excel формат
-- 🔒 **Безопасность** - rate limiting, валидация файлов, безопасные заголовки
+- **Загрузка PDF файлов** - через drag-and-drop или выбор файла
+- **Автоматическая конвертация** - PDF в JSON формат
+- **Расчет транзакций** - общие суммы по каждому магазину
+- **Красивый интерфейс** - современный UI на Tailwind CSS
+- **Просмотр JSON** - просмотр исходных данных
+- **Экспорт в Excel** - экспорт результатов в Excel формат
+- **Безопасность** - rate limiting, валидация файлов, безопасные заголовки
 
 ## Журнал изменений
 [1.2.0] - 12 Января 2026
 - Добавлен экспорт в Excel формат
-- Оптимизировано для Vercel Hobby план (таймаут 10 секунд)
 - Улучшена безопасность (rate limiting, валидация файлов)
 - Улучшена обработка ошибок и обратная связь с пользователем
 - Добавлены ограничения размера файла (5MB для Hobby плана)
