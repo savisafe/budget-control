@@ -87,15 +87,15 @@ processBtn.addEventListener('click', async () => {
             body: formData
         });
 
-        const data = await response.json();
+                const data = await response.json();
 
-        if (!response.ok) {
-            errorData = data;
-            let errorMessage = data.error || 'Ошибка обработки файла';
-            throw new Error(errorMessage);
-        }
+                if (!response.ok) {
+                    errorData = data;
+                    let errorMessage = data.error || 'Ошибка обработки файла';
+                    throw new Error(errorMessage);
+                }
 
-        displayResults(data);
+                displayResults(data);
     } catch (err) {
         showError(err.message, errorData);
     } finally {
@@ -107,7 +107,27 @@ processBtn.addEventListener('click', async () => {
 function displayResults(data) {
     currentResultsData = data;
     
+    const expensesCard = document.getElementById('expensesCard');
+    const incomeCard = document.getElementById('incomeCard');
+    const totalExpensesEl = document.getElementById('totalExpenses');
+    const totalIncomeEl = document.getElementById('totalIncome');
+    
     transactionsList.innerHTML = '';
+    
+    if (data.totalExpenses !== undefined || data.totalIncome !== undefined) {
+        if (expensesCard && totalExpensesEl) {
+            totalExpensesEl.textContent = `${(data.totalExpenses || 0).toFixed(2)} ₸`;
+            expensesCard.classList.remove('hidden');
+        }
+        
+        if (incomeCard && totalIncomeEl) {
+            totalIncomeEl.textContent = `+${(data.totalIncome || 0).toFixed(2)} ₸`;
+            incomeCard.classList.remove('hidden');
+        }
+    } else {
+        if (expensesCard) expensesCard.classList.add('hidden');
+        if (incomeCard) incomeCard.classList.add('hidden');
+    }
     
     if (data.transactions && Object.keys(data.transactions).length > 0) {
         for (const [store, info] of Object.entries(data.transactions)) {
@@ -206,6 +226,10 @@ exportExcelBtn.addEventListener('click', () => {
             ]);
         }
 
+        excelData.push([]);
+        excelData.push(['ИТОГО']);
+        excelData.push(['Итого расходов', '', (currentResultsData.totalExpenses || 0).toFixed(2)]);
+        excelData.push(['Итого доходов', '', (currentResultsData.totalIncome || 0).toFixed(2)]);
         excelData.push([]);
 
         if (rawData.length > 0) {

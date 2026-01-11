@@ -109,6 +109,31 @@
         <div id="results" class="hidden bg-white rounded-2xl shadow-2xl p-6 md:p-10">
             <h2 class="text-3xl font-bold text-slate-800 mb-6">Результаты расчетов</h2>
             
+            <!-- Summary Cards -->
+            <div id="summaryCards" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <!-- Expenses Card -->
+                <div id="expensesCard" class="hidden bg-white p-5 rounded-lg border-l-4 border-warning shadow-md">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <div class="text-sm text-slate-600 mb-1">Итого расходов</div>
+                            <div id="totalExpenses" class="text-2xl font-bold text-warning">0.00 ₸</div>
+                        </div>
+                        <div class="text-4xl">📉</div>
+                    </div>
+                </div>
+                
+                <!-- Income Card -->
+                <div id="incomeCard" class="hidden bg-white p-5 rounded-lg border-l-4 border-accent shadow-md">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <div class="text-sm text-slate-600 mb-1">Итого доходов</div>
+                            <div id="totalIncome" class="text-2xl font-bold text-accent">0.00 ₸</div>
+                        </div>
+                        <div class="text-4xl">📈</div>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Transactions List -->
             <div id="transactionsList" class="space-y-4 mb-6"></div>
 

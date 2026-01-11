@@ -2,6 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const pdfParse = require('pdf-parse');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -28,13 +29,11 @@ const upload = multer({
 });
 
 app.use(express.json({ limit: '10mb' }));
+
 app.get('/terms', (req, res) => {
-    console.log('Маршрут /terms вызван');
     const filePath = path.join(__dirname, 'public', 'terms.html');
-    console.log('Путь к файлу:', filePath);
     res.sendFile(filePath, (err) => {
         if (err) {
-            console.error('Ошибка отправки файла:', err);
             res.status(500).send('Ошибка загрузки страницы');
         }
     });
@@ -59,171 +58,118 @@ app.use((req, res, next) => {
 });
 
 function parsePDFText(text) {
-    console.log('\n=== НАЧАЛО ПАРСИНГА PDF ===');
-    console.log('Длина исходного текста:', text.length);
-    
     const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-    console.log('Количество строк после обработки:', lines.length);
-    console.log('Первые 10 строк:', lines.slice(0, 10));
     
     const transactions = [];
     
     let periodHeader = null;
 
-    console.log('\n--- Поиск заголовка периода ---');
     for (let i = 0; i < lines.length; i++) {
         if (lines[i].includes('Выписка по Kaspi Gold за период')) {
             periodHeader = lines[i];
-            console.log('✓ Найден заголовок:', periodHeader);
             break;
         }
     }
-    if (!periodHeader) {
-        console.log('✗ Заголовок периода не найден');
-    }
 
-    console.log('\n--- Основной метод парсинга ---');
-    const transactionPattern = /(\d{2}\.\d{2}\.\d{2})\s*([+-]\s*[\d\s]+,\d{2}\s*₸)\s+(Покупка|Пополнение)\s+(.+?)(?=\d{2}\.\d{2}\.\d{2}|$)/g;
+    const transactionPattern = /(\d{2}\.\d{2}\.\d{2})\s*([+-]\s*[\d\s]+,\d{2}\s*₸)\s+(Покупка|Пополнение|Переводы?|Разное)\s+(.+?)(?=\d{2}\.\d{2}\.\d{2}|$)/g;
 
     const fullText = lines.join(' ');
-    console.log('Длина объединенного текста:', fullText.length);
-    console.log('Образец текста (500 символов):', fullText.substring(0, 500));
 
     transactionPattern.lastIndex = 0;
     
     let match;
-    let matchCount = 0;
     while ((match = transactionPattern.exec(fullText)) !== null) {
-        matchCount++;
         const date = match[1];
         const amount = match[2].trim();
-        const type = match[3];
+        const type = match[3].trim();
         const store = match[4].trim();
         
-        console.log(`\nНайдено совпадение #${matchCount}:`);
-        console.log('  Дата:', date);
-        console.log('  Сумма:', amount);
-        console.log('  Тип:', type);
-        console.log('  Магазин:', store);
-        console.log('  Полное совпадение:', match[0]);
-        
-        if (store && store.length > 1 && !store.includes('Выписка') && !store.includes('Доступно')) {
-            console.log('  ✓ Транзакция добавлена');
+        if (store && store.length > 1 && 
+            !store.includes('Выписка') && 
+            !store.includes('Доступно') &&
+            !store.includes('ДатаСуммаОперация') &&
+            !store.match(/^Дата.*Сумма.*Операция/i) &&
+            (type === 'Покупка' || type === 'Пополнение' || type === 'Переводы' || type === 'Перевод' || type === 'Разное')) {
             transactions.push({
                 [periodHeader || 'Выписка по Kaspi Gold']: date,
                 Column2: amount,
                 Column3: type,
                 Column4: store
             });
-        } else {
-            console.log('  ✗ Транзакция отклонена (проверка магазина не пройдена)');
         }
     }
     
-    console.log(`\nОсновной метод: найдено совпадений: ${matchCount}, добавлено транзакций: ${transactions.length}`);
-    
     if (transactions.length === 0) {
-        console.log('\n--- Построчный анализ ---');
-        console.log('Основной метод не сработал, пробуем построчный анализ...');
-        
-        const linePattern = /^(\d{2}\.\d{2}\.\d{2})\s*([+-]\s*[\d\s]+,\d{2}\s*₸)\s+(Покупка|Пополнение)\s+(.+)$/;
-        let lineMatchCount = 0;
+        const linePattern = /^(\d{2}\.\d{2}\.\d{2})\s*([+-]\s*[\d\s]+,\d{2}\s*₸)\s+(Покупка|Пополнение|Переводы?|Разное)\s+(.+)$/;
         
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
-
             const lineMatch = line.match(linePattern);
             
             if (lineMatch) {
-                lineMatchCount++;
                 const date = lineMatch[1];
                 const amount = lineMatch[2].trim();
                 const type = lineMatch[3];
                 const store = lineMatch[4].trim();
                 
-                console.log(`\nСтрока #${i}: "${line}"`);
-                console.log(`  ✓ Совпадение найдено:`);
-                console.log(`    Дата: ${date}, Сумма: ${amount}, Тип: ${type}, Магазин: ${store}`);
-                
-                if (store && store.length > 1) {
+                if (store && store.length > 1 && 
+                    !store.includes('ДатаСуммаОперация') &&
+                    !store.match(/^Дата.*Сумма.*Операция/i) &&
+                    (type === 'Покупка' || type === 'Пополнение' || type === 'Переводы' || type === 'Перевод' || type === 'Разное')) {
                     transactions.push({
                         [periodHeader || 'Выписка по Kaspi Gold']: date,
                         Column2: amount,
                         Column3: type,
                         Column4: store
                     });
-                    console.log(`  ✓ Транзакция добавлена`);
-                } else {
-                    console.log(`  ✗ Транзакция отклонена (магазин не прошел проверку)`);
                 }
-            } else if (line.match(/^\d{2}\.\d{2}\.\d{2}/)) {
-                console.log(`\nСтрока #${i} начинается с даты, но не совпала: "${line}"`);
             }
         }
-        
-        console.log(`\nПострочный анализ: найдено совпадений: ${lineMatchCount}, добавлено транзакций: ${transactions.length}`);
     }
 
     if (transactions.length === 0) {
-        console.log('\n--- Альтернативный метод парсинга ---');
-        console.log('Пробуем альтернативный метод парсинга...');
         const combinedText = text.replace(/\n/g, ' ');
-        console.log('Длина объединенного текста (без переносов):', combinedText.length);
         
         const patterns = [
-            { name: 'Паттерн 1 (строгий)', regex: /(\d{2}\.\d{2}\.\d{2})\s*([+-]\s*[\d\s]+,\d{2}\s*₸)\s+(Покупка|Пополнение)\s+([A-ZА-Я][A-ZА-Яa-zа-я\s&]+?)(?=\d{2}\.\d{2}\.\d{2}|$)/g },
-            { name: 'Паттерн 2 (с точкой/запятой)', regex: /(\d{2}\.\d{2}\.\d{2})\s*([+-]\s*[\d\s]+[.,]\d{2}\s*₸)\s+(Покупка|Пополнение)\s+([A-ZА-Я][^₸]+?)(?=\d{2}\.\d{2}\.\d{2}|$)/g },
-            { name: 'Паттерн 3 (свободный)', regex: /(\d{2}\.\d{2}\.\d{2})[^\d]*([+-][\d\s,]+₸)[^\d]*(Покупка|Пополнение)[^\d]*([A-ZА-Я][A-ZА-Яa-zа-я\s&]+)/g }
+            { name: 'Паттерн 1 (строгий)', regex: /(\d{2}\.\d{2}\.\d{2})\s*([+-]\s*[\d\s]+,\d{2}\s*₸)\s+(Покупка|Пополнение|Переводы?|Разное)\s+([A-ZА-Я][A-ZА-Яa-zа-я\s&]+?)(?=\d{2}\.\d{2}\.\d{2}|$)/g },
+            { name: 'Паттерн 2 (с точкой/запятой)', regex: /(\d{2}\.\d{2}\.\d{2})\s*([+-]\s*[\d\s]+[.,]\d{2}\s*₸)\s+(Покупка|Пополнение|Переводы?|Разное)\s+([A-ZА-Я][^₸]+?)(?=\d{2}\.\d{2}\.\d{2}|$)/g },
+            { name: 'Паттерн 3 (свободный)', regex: /(\d{2}\.\d{2}\.\d{2})[^\d]*([+-][\d\s,]+₸)[^\d]*(Покупка|Пополнение|Переводы?|Разное)[^\d]*([A-ZА-Я][A-ZА-Яa-zа-я\s&]+)/g }
         ];
         
         for (const pattern of patterns) {
-            console.log(`\nПробуем ${pattern.name}...`);
             pattern.regex.lastIndex = 0;
             let match;
             const foundTransactions = [];
-            let matchCount = 0;
             
             while ((match = pattern.regex.exec(combinedText)) !== null) {
-                matchCount++;
                 if (match.length >= 4) {
                     const date = match[1];
                     const amount = match[2] || '';
                     const type = match[3] || '';
                     const store = match[4] ? match[4].trim() : '';
                     
-                    console.log(`  Совпадение #${matchCount}:`);
-                    console.log(`    Дата: ${date}, Сумма: ${amount}, Тип: ${type}, Магазин: ${store}`);
-                    console.log(`    Полное совпадение: "${match[0]}"`);
-                    
-                    if (date && amount && type && store && store.length > 2) {
-                        console.log(`    ✓ Транзакция добавлена`);
+                    if (date && amount && type && store && store.length > 2 &&
+                        !store.includes('ДатаСуммаОперация') &&
+                        !store.match(/^Дата.*Сумма.*Операция/i) &&
+                        (type === 'Покупка' || type === 'Пополнение' || type === 'Переводы' || type === 'Перевод' || type === 'Разное')) {
                         foundTransactions.push({
                             [periodHeader || 'Выписка']: date,
                             Column2: amount,
                             Column3: type,
                             Column4: store
                         });
-                    } else {
-                        console.log(`    ✗ Транзакция отклонена (не все поля заполнены или магазин слишком короткий)`);
                     }
                 }
             }
             
-            console.log(`${pattern.name}: найдено совпадений: ${matchCount}, добавлено транзакций: ${foundTransactions.length}`);
-            
             if (foundTransactions.length > 0) {
-                console.log(`✓ Альтернативный метод нашел ${foundTransactions.length} транзакций`);
                 return foundTransactions;
             }
         }
         
-        console.log('\n--- Финальный построчный анализ ---');
-        console.log('Пробуем финальный построчный анализ...');
         const finalLines = text.split('\n');
         const lineTransactions = [];
         let tempTransaction = {};
-        
-        console.log(`Обрабатываем ${finalLines.length} строк...`);
         
         for (let i = 0; i < finalLines.length; i++) {
             const line = finalLines[i].trim();
@@ -231,7 +177,6 @@ function parsePDFText(text) {
             const dateMatch = line.match(/(\d{2}\.\d{2}\.\d{2,4})/);
             if (dateMatch) {
                 if (tempTransaction.date && tempTransaction.amount && tempTransaction.type && tempTransaction.store) {
-                    console.log(`  Сохраняем транзакцию: ${JSON.stringify(tempTransaction)}`);
                     lineTransactions.push({
                         [periodHeader || 'Выписка']: tempTransaction.date,
                         Column2: tempTransaction.amount,
@@ -240,38 +185,40 @@ function parsePDFText(text) {
                     });
                 }
                 tempTransaction = { date: dateMatch[1] };
-                console.log(`  Строка #${i}: найдена дата ${dateMatch[1]} в "${line}"`);
             }
             
             if (!tempTransaction.amount) {
                 const amountMatch = line.match(/([+-][\d\s,]+₸)/);
                 if (amountMatch) {
                     tempTransaction.amount = amountMatch[1].trim();
-                    console.log(`  Строка #${i}: найдена сумма ${tempTransaction.amount}`);
                 }
             }
             
             if (!tempTransaction.type) {
                 if (line.includes('Покупка')) {
                     tempTransaction.type = 'Покупка';
-                    console.log(`  Строка #${i}: найден тип Покупка`);
-                }
-                if (line.includes('Пополнение')) {
+                } else if (line.includes('Пополнение')) {
                     tempTransaction.type = 'Пополнение';
-                    console.log(`  Строка #${i}: найден тип Пополнение`);
+                } else if (line.includes('Перевод')) {
+                    tempTransaction.type = 'Переводы';
+                } else if (line.includes('Разное')) {
+                    tempTransaction.type = 'Разное';
                 }
             }
             
             if (!tempTransaction.store && tempTransaction.date && tempTransaction.amount && tempTransaction.type) {
-                if (line.length > 3 && !line.match(/^\d/) && !line.includes('₸') && !line.includes('Выписка')) {
+                if (line.length > 3 && 
+                    !line.match(/^\d/) && 
+                    !line.includes('₸') && 
+                    !line.includes('Выписка') &&
+                    !line.includes('ДатаСуммаОперация') &&
+                    !line.match(/^Дата.*Сумма.*Операция/i)) {
                     tempTransaction.store = line;
-                    console.log(`  Строка #${i}: найден магазин "${line}"`);
                 }
             }
         }
         
         if (tempTransaction.date && tempTransaction.amount && tempTransaction.type && tempTransaction.store) {
-            console.log(`  Сохраняем последнюю транзакцию: ${JSON.stringify(tempTransaction)}`);
             lineTransactions.push({
                 [periodHeader || 'Выписка']: tempTransaction.date,
                 Column2: tempTransaction.amount,
@@ -281,22 +228,9 @@ function parsePDFText(text) {
         }
         
         if (lineTransactions.length > 0) {
-            console.log(`✓ Финальный построчный анализ нашел ${lineTransactions.length} транзакций`);
             return lineTransactions;
-        } else {
-            console.log(`✗ Финальный построчный анализ не нашел транзакций`);
         }
     }
-
-    console.log(`\n=== КОНЕЦ ПАРСИНГА ===`);
-    console.log(`Итого найдено транзакций: ${transactions.length}`);
-    if (transactions.length > 0) {
-        console.log('Найденные транзакции:');
-        transactions.forEach((t, i) => {
-            console.log(`  ${i + 1}. ${JSON.stringify(t)}`);
-        });
-    }
-    console.log('========================\n');
     
     return transactions;
 }
@@ -421,12 +355,8 @@ app.post('/api/process-pdf', rateLimitMiddleware, upload.single('pdf'), async (r
                 error: 'PDF файл слишком большой для обработки на Hobby плане. Попробуйте файл меньшего размера или обновите план до Pro.' 
             });
         }
-
-        console.log('Начинаем парсинг PDF...');
-        console.log('Длина текста:', text.length);
         
         const transactions = parsePDFText(text);
-        console.log('Найдено транзакций:', transactions.length);
 
         if (transactions.length === 0) {
             clearTimeout(timeout);
@@ -437,13 +367,39 @@ app.post('/api/process-pdf', rateLimitMiddleware, upload.single('pdf'), async (r
 
         const processedTransactions = processTransactions(transactions);
 
+        let totalExpenses = 0;
+        let totalIncome = 0;
+
+        for (const [store, info] of Object.entries(processedTransactions)) {
+            const type = info.type || '';
+            if (type === 'Покупка' || type === 'Снятия') {
+                totalExpenses += Math.abs(info.total);
+            } else if (type === 'Пополнение' || type === 'Пополнения') {
+                totalIncome += info.total;
+            } else if (type === 'Переводы' || type === 'Перевод' || type === 'Разное') {
+                if (info.total < 0) {
+                    totalExpenses += Math.abs(info.total);
+                } else {
+                    totalIncome += info.total;
+                }
+            } else {
+                if (info.total < 0) {
+                    totalExpenses += Math.abs(info.total);
+                } else {
+                    totalIncome += info.total;
+                }
+            }
+        }
+
         clearTimeout(timeout);
 
         res.json({
             success: true,
             transactions: processedTransactions,
             rawData: transactions,
-            totalTransactions: transactions.length
+            totalTransactions: transactions.length,
+            totalExpenses: totalExpenses,
+            totalIncome: totalIncome
         });
 
     } catch (error) {
