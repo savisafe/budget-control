@@ -2,14 +2,18 @@
   "name": "budget-control",
   "version": "1.0.0",
   "description": "A simple budget management tool that processes Kaspi Gold bank statements and calculates total expenses and income for each store.",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "dev": "node index.js",
-    "start": "node index.js"
+    "dev": "node server.js",
+    "start": "node server.js"
   },
   "author": "savisafe",
   "license": "MIT",
-  "devDependencies": {},
+  "dependencies": {
+    "express": "^4.22.1",
+    "multer": "^1.4.5-lts.1",
+    "pdf-parse": "^1.1.4"
+  },
   "engines": {
     "node": ">=14.0.0"
   }
